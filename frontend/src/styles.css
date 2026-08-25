@@ -1,0 +1,262 @@
+:root {
+  color: #17233c;
+  background: #f2f5fa;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 5%, rgba(67, 97, 238, 0.13), transparent 28rem),
+    radial-gradient(circle at 95% 15%, rgba(0, 180, 216, 0.12), transparent 25rem), #f5f7fb;
+}
+
+button {
+  font: inherit;
+}
+
+.shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 72px;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+h1 {
+  margin-bottom: 10px;
+  font-size: clamp(2.25rem, 5vw, 4.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+h2 {
+  margin-bottom: 8px;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+.subtitle {
+  max-width: 680px;
+  color: #56627a;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+.eyebrow {
+  margin-bottom: 10px;
+  color: #3857d6;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+button.primary,
+button.secondary {
+  min-width: 170px;
+  padding: 12px 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 750;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
+
+button.primary {
+  color: white;
+  background: #2748c7;
+  box-shadow: 0 10px 24px rgba(39, 72, 199, 0.24);
+}
+button.secondary {
+  color: #2748c7;
+  background: white;
+  border-color: #cdd6eb;
+}
+button:hover {
+  transform: translateY(-1px);
+}
+button:focus-visible {
+  outline: 3px solid rgba(39, 72, 199, 0.3);
+  outline-offset: 2px;
+}
+
+.card {
+  border: 1px solid rgba(185, 198, 221, 0.72);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 50px rgba(54, 70, 105, 0.08);
+  backdrop-filter: blur(14px);
+  padding: 24px;
+}
+
+.sign-in-card {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  max-width: 760px;
+  line-height: 1.65;
+}
+.step {
+  display: grid;
+  flex: 0 0 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: #2748c7;
+  font-weight: 800;
+}
+.identity-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.identity-card p {
+  color: #667087;
+}
+dl {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 8px 12px;
+  margin: 20px 0 0;
+  font-size: 0.82rem;
+}
+dt {
+  color: #6b7690;
+  font-weight: 700;
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
+}
+.chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #384763;
+  background: #edf1f8;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+.chip.accent {
+  color: #13574f;
+  background: #ddf4ee;
+}
+.hint {
+  margin: 16px 0 0;
+  color: #758099;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.flows {
+  padding: 28px;
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.status {
+  color: #3857d6;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.flow-grid button {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  text-align: left;
+  border: 1px solid #d9e0ee;
+  border-radius: 12px;
+  color: #17233c;
+  background: #fff;
+  cursor: pointer;
+}
+.flow-grid button span {
+  color: #737e94;
+  font-size: 0.76rem;
+}
+.error,
+.empty {
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+.error {
+  color: #8c2430;
+  background: #fff0f1;
+  border: 1px solid #f2c3c8;
+}
+.empty {
+  color: #5c6576;
+  background: #f4f6fa;
+}
+pre {
+  margin: 20px 0 0;
+  padding: 18px;
+  overflow: auto;
+  border-radius: 12px;
+  color: #dbe7ff;
+  background: #111a2c;
+  font:
+    0.78rem/1.55 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+@media (max-width: 820px) {
+  .identity-grid,
+  .flow-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    flex-direction: column;
+  }
+  button.primary,
+  button.secondary {
+    width: 100%;
+  }
+}

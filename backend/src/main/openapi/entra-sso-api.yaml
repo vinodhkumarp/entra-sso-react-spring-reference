@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Entra SSO Reference API
+  version: 1.0.0
+  description: >-
+    Protected reference endpoints consumed by the React SPA. Microsoft Entra issues the access
+    token; this API validates it and enforces the declared scope and application roles.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: UserAccess
+    description: Authenticated-user identity and UI functionality
+  - name: Business
+    description: Dashboard and report examples
+  - name: AdminUsers
+    description: Administrator-only user examples
+security:
+  - entraOAuth2:
+      - access_as_user
+paths:
+  /api/me:
+    get:
+      tags:
+        - UserAccess
+      operationId: getCurrentUser
+      summary: Return the current user's access metadata
+      description: >-
+        Returns identity claims, application roles, and UI functionality derived from the already
+        validated access token. This operation does not authenticate the user or issue a token.
+      responses:
+        "200":
+          description: Current user metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccessResponse"
+        "401":
+          description: Missing, expired, or otherwise invalid bearer token
+        "403":
+          description: Token does not contain the required delegated scope
+  /api/dashboard:
+    get:
+      tags:
+        - Business
+      operationId: getDashboard
+      summary: Return dashboard data
+      description: Requires APP_USER, APP_MANAGER, or APP_ADMIN.
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+        "401":
+          description: Missing, expired, or otherwise invalid bearer token
+        "403":
+          description: Required scope or application role is missing
+  /api/reports:
+    get:
+      tags:
+        - Business
+      operationId: getReports
+      summary: Return report summaries
+      description: Requires APP_MANAGER or APP_ADMIN.
+      responses:
+        "200":
+          description: Report summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportsResponse"
+        "401":
+          description: Missing, expired, or otherwise invalid bearer token
+        "403":
+          description: Required scope or application role is missing
+  /api/admin/users:
+    get:
+      tags:
+        - AdminUsers
+      operationId: getAdminUsers
+      summary: Return administrator user examples
+      description: Requires APP_ADMIN.
+      responses:
+        "200":
+          description: Safe administrator user projections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Missing, expired, or otherwise invalid bearer token
+        "403":
+          description: Required scope or APP_ADMIN role is missing
+components:
+  securitySchemes:
+    entraOAuth2:
+      type: oauth2
+      description: Microsoft Entra authorization code flow with PKCE for the React SPA.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize
+          tokenUrl: https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token
+          scopes:
+            access_as_user: Call the Entra SSO reference API on behalf of the signed-in user
+  schemas:
+    UserAccessResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - subjectId
+        - username
+        - displayName
+        - tenantId
+        - roles
+        - functionalities
+        - tokenExpiresAt
+      properties:
+        subjectId:
+          type: string
+          description: Stable user object identifier from the validated token.
+          example: 8db1f852-9f10-4e29-b1ab-0b819fcb5d3f
+        username:
+          type: string
+          description: Preferred username, UPN, or token subject fallback.
+          example: manager@example.onmicrosoft.com
+        displayName:
+          type: string
+          description: Display name or username fallback.
+          example: Example Manager
+        tenantId:
+          type: string
+          description: Microsoft Entra tenant identifier.
+          example: 2a61e214-d27a-46f2-b24f-09173719c748
+        roles:
+          type: array
+          description: Sorted application roles from the validated roles claim.
+          items:
+            type: string
+          example:
+            - APP_MANAGER
+        functionalities:
+          type: array
+          description: Sorted UI functionality hints resolved by the backend.
+          items:
+            type: string
+          example:
+            - DASHBOARD_VIEW
+            - REPORTS_VIEW
+        tokenExpiresAt:
+          type: string
+          format: date-time
+          description: Expiration time from the validated access token.
+    DashboardResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+        - widgets
+        - generatedAt
+      properties:
+        message:
+          type: string
+          example: Dashboard data returned by the Entra SSO backend
+        widgets:
+          type: array
+          items:
+            type: string
+          example:
+            - "Open tasks: 4"
+            - "Reports ready: 2"
+        generatedAt:
+          type: string
+          format: date-time
+    ReportsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+        - reports
+        - generatedAt
+      properties:
+        message:
+          type: string
+          example: Reports data returned by the Entra SSO backend
+        reports:
+          type: array
+          items:
+            type: string
+          example:
+            - monthly-summary.csv
+            - security-audit.pdf
+        generatedAt:
+          type: string
+          format: date-time
+    AdminUser:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - displayName
+        - status
+      properties:
+        id:
+          type: string
+          example: demo-user-1
+        displayName:
+          type: string
+          example: Demo User
+        status:
+          type: string
+          example: ACTIVE

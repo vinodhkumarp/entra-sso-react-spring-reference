@@ -1,0 +1,24 @@
+# Build output
+backend/target/
+frontend/dist/
+frontend/node_modules/
+*.tsbuildinfo
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+frontend/.env.local
+
+# IDE and operating system files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Logs and test output
+*.log
+coverage/
+
+node_modules/
