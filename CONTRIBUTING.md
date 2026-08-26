@@ -7,11 +7,13 @@ tenant IDs, bearer tokens, user data, generated build output, or local environme
 
 ```bash
 cd backend
+./mvnw spotless:apply
 ./mvnw verify
 
 cd ../frontend
 npm ci
-npm run build
+npm run format
+npm run check
 ```
 
 Add or update authorization tests whenever an endpoint, role, scope, audience, or security rule
@@ -25,5 +27,7 @@ changes.
 - Preserve tenant-specific issuer and strict audience validation.
 - Include tests for anonymous, insufficient-permission, and successful requests.
 - Keep dependencies pinned through Maven dependency management and `package-lock.json`.
+- Route browser diagnostics through `frontend/src/logger.ts`; never log tokens or secrets.
+- Preserve or safely generate `X-Correlation-Id` in every HTTP path, including errors.
 
 By contributing, you agree that your contribution is licensed under Apache License 2.0.

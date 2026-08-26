@@ -15,6 +15,8 @@ Spring Boot backend application.
 - `/api/me` for UI identity, role, and functionality rendering
 - `@PreAuthorize` authorization for dashboard, reports, and administrator endpoints
 - Exact-origin CORS, stateless APIs, and no custom authentication endpoint
+- End-to-end `X-Correlation-Id` propagation and correlation-aware request logging
+- Spotless/google-java-format for Java and Prettier for the React application
 - Automated tests for `401`, `403`, roles, CORS, `/api/me`, and successful requests
 
 ## Simplified architecture
@@ -24,7 +26,7 @@ flowchart LR
     User["User"] --> UI["React SPA :5173"]
     UI -->|"Authorization code + PKCE"| Entra["Microsoft Entra ID"]
     Entra -->|"Access token"| UI
-    UI -->|"Bearer access token"| API["Spring Boot backend :8080"]
+    UI -->|"Bearer token + X-Correlation-Id"| API["Spring Boot backend :8080"]
     API -->|"Discover signing keys"| Entra
     API --> Me["/api/me"]
     API --> Dashboard["/api/dashboard"]
@@ -45,8 +47,11 @@ backend/
   src/main/java/com/example/entrasso/
     EntraSsoApplication.java
     security/                       JWT, CORS, role conversion, and /api/me
+    logging/                        Correlation-ID filter and HTTP request logs
     api/                            Dashboard, reports, and admin endpoints
-  src/main/resources/application.yml
+  src/main/resources/
+    application.yml                Security and role configuration
+    logback-spring.xml             Six-field JSON console logging
   src/test/                         Security and role-flow tests
 frontend/                           React and MSAL UI
 docs/                              Entra setup, architecture, flows, troubleshooting
@@ -164,6 +169,78 @@ npm run dev
 
 Open `http://localhost:5173` and select **Sign in with Microsoft**.
 
+## Correlation IDs and centralized logging
+
+Every React API call creates a UUID and sends it in `X-Correlation-Id`. The backend filter runs
+before Spring Security, validates the value, places it in SLF4J MDC, returns it in the response,
+and includes it in the completion log. This also covers `401` and `403` responses. If a non-UI
+client omits the header—or sends an unsafe value—the backend creates a UUID instead.
+
+```mermaid
+sequenceDiagram
+    participant UI as React api.ts
+    participant Filter as CorrelationIdFilter
+    participant Security as Spring Security
+    participant API as Controller
+
+    UI->>UI: Create request UUID
+    UI->>Filter: Bearer token + X-Correlation-Id
+    Filter->>Filter: Validate ID and put it in MDC
+    Filter->>Security: Continue request
+    Security->>API: Valid scope and role
+    API-->>Filter: HTTP response
+    Filter-->>UI: Response + same X-Correlation-Id
+```
+
+The frontend uses `src/logger.ts` as its single structured logging boundary. Authentication and
+API modules log event names and safe scalar context without tokens. The backend's
+`logback-spring.xml` writes one JSON object per line containing exactly `X-Correlation-Id`, `level`,
+`message`, `logger`, `traceparent`, and `stack_trace`. It does not log query strings, request
+bodies, claims, or authorization headers.
+
+To test generation without a bearer token:
+
+```bash
+curl -i http://localhost:8080/actuator/health
+```
+
+To test propagation:
+
+```bash
+curl -i -H 'X-Correlation-Id: local-test-001' http://localhost:8080/actuator/health
+```
+
+If an instrumented client or gateway supplies a valid W3C `traceparent`, the filter adds it to MDC
+and the JSON log. Without distributed-tracing instrumentation the property remains an empty
+string. For centralized production ingestion, collect the backend's JSON standard output with the
+deployment platform. Browser logs require an approved telemetry transport and consent policy; the
+central logger is the one extension point for Application Insights or OpenTelemetry. See
+[docs/observability.md](docs/observability.md).
+
+## Formatting and quality checks
+
+Backend formatting uses Spotless 3.9.0 with google-java-format 1.36.0. `verify` automatically runs
+the formatting check:
+
+```bash
+cd backend
+./mvnw spotless:apply   # format Java sources
+./mvnw spotless:check   # check without changing files
+./mvnw verify           # tests, package, and formatting check
+```
+
+Frontend formatting uses the exact Prettier version recorded in `package-lock.json`. TypeScript's
+strict compiler remains the code-quality gate. The current TypeScript 7 compiler is newer than the
+supported `typescript-eslint` peer range, so this repository does not force an incompatible ESLint
+installation.
+
+```bash
+cd frontend
+npm run format          # format frontend source/configuration
+npm run format:check    # check without changing files
+npm run check           # formatting check, strict typecheck, and production build
+```
+
 ## 4. Test each role
 
 | Assigned role | Dashboard | Reports | Admin users |
@@ -205,7 +282,7 @@ configures `oauth2ResourceServer().jwt(...)`. On each protected request:
 
 ```bash
 cd backend && ./mvnw verify
-cd ../frontend && npm ci && npm run build
+cd ../frontend && npm ci && npm run check
 ```
 
 GitHub Actions runs both checks for pushes and pull requests.
@@ -227,6 +304,7 @@ URI mismatches, and the difference between `401` and `403`.
 - Enable dependency review, Dependabot, secret scanning, push protection, private vulnerability
   reporting, and protected `main` checks.
 - Keep access tokens out of logs, browser console output, URLs, local storage, and API responses.
+- Configure a production log/telemetry collector and retention/redaction policy.
 - Split into separately registered resource APIs only when service ownership or trust boundaries
   require it; each such API must validate its own audience.
 

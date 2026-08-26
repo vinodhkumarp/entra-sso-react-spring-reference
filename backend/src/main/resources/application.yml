@@ -7,6 +7,8 @@ server:
 spring:
   application:
     name: entra-sso-backend
+  main:
+    banner-mode: off
   lifecycle:
     timeout-per-shutdown-phase: 30s
   security:

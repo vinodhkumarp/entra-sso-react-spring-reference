@@ -18,9 +18,12 @@ The request contains:
 
 ```http
 Authorization: Bearer <access-token>
+X-Correlation-Id: 778c2e8b-f256-47b4-af7e-a9187f79ec08
 ```
 
 The API never returns that token and React does not place it in application state or local storage.
+The API does return the effective `X-Correlation-Id` response header so UI and backend events can
+be matched during support and incident investigation.
 
 ## 3. `/api/me` and UI rendering
 
@@ -101,3 +104,7 @@ backend does not need a Spring logout endpoint.
 4. If it appears in the UI, add a role-to-functionality entry in `application.yml`.
 5. Add tests for no token, missing scope, wrong role, and success.
 6. Add a typed React call through `callApi` if the UI consumes it.
+
+Calls made through `callApi` automatically acquire a token, create and attach a correlation ID,
+and use the centralized browser logger. Do not bypass it with ad hoc `fetch` calls unless the same
+security and observability behavior is deliberately reproduced.

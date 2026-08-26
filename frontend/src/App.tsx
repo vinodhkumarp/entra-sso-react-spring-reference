@@ -2,12 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { callApi } from "./api";
 import { loginRequest } from "./authConfig";
-import type {
-  AdminUser,
-  DashboardResponse,
-  ReportsResponse,
-  UserAccess,
-} from "./types";
+import type { AdminUser, DashboardResponse, ReportsResponse, UserAccess } from "./types";
 
 type FlowResult = DashboardResponse | ReportsResponse | AdminUser[] | null;
 
@@ -24,10 +19,9 @@ export function App() {
 
   /** Loads the backend's role-to-functionality view after successful SSO. */
   useEffect(() => {
-    const selectedAccount = instance.getActiveAccount()
-      ?? instance.getAllAccounts().find(
-        (candidate) => candidate.homeAccountId === accountId,
-      );
+    const selectedAccount =
+      instance.getActiveAccount() ??
+      instance.getAllAccounts().find((candidate) => candidate.homeAccountId === accountId);
 
     if (!isAuthenticated || !selectedAccount) {
       setAccess(null);
@@ -61,14 +55,10 @@ export function App() {
   }, [accountId, instance, isAuthenticated]);
 
   /** Converts the backend's UI hints into a set for simple menu visibility checks. */
-  const functionalities = useMemo(
-    () => new Set(access?.functionalities ?? []),
-    [access],
-  );
+  const functionalities = useMemo(() => new Set(access?.functionalities ?? []), [access]);
 
   /** Returns whether the current UI metadata includes a named functionality. */
-  const can = (functionality: string): boolean =>
-    functionalities.has(functionality);
+  const can = (functionality: string): boolean => functionalities.has(functionality);
 
   /** Starts the Entra authorization-code-with-PKCE redirect flow. */
   const signIn = (): void => {
@@ -92,7 +82,7 @@ export function App() {
     setLoading(true);
     setError(null);
     try {
-      setResult(await callApi<T>(instance, account, path) as FlowResult);
+      setResult((await callApi<T>(instance, account, path)) as FlowResult);
     } catch (flowError: unknown) {
       setError(errorMessage(flowError));
       setResult(null);
@@ -112,9 +102,13 @@ export function App() {
           </p>
         </div>
         {isAuthenticated ? (
-          <button className="secondary" onClick={signOut}>Sign out</button>
+          <button className="secondary" onClick={signOut}>
+            Sign out
+          </button>
         ) : (
-          <button className="primary" onClick={signIn}>Sign in with Microsoft</button>
+          <button className="primary" onClick={signIn}>
+            Sign in with Microsoft
+          </button>
         )}
       </header>
 
@@ -125,8 +119,8 @@ export function App() {
             <h2>Start the SSO flow</h2>
             <p>
               MSAL redirects to Microsoft Entra, then returns with an authorization code and
-              exchanges it using PKCE. The SPA requests an access token for this API—not an ID
-              token and not a token created by Spring Boot.
+              exchanges it using PKCE. The SPA requests an access token for this API—not an ID token
+              and not a token created by Spring Boot.
             </p>
           </div>
         </section>
@@ -149,7 +143,9 @@ export function App() {
               <p className="eyebrow">Token roles</p>
               <div className="chips">
                 {(access?.roles ?? []).map((role) => (
-                  <span className="chip" key={role}>{role}</span>
+                  <span className="chip" key={role}>
+                    {role}
+                  </span>
                 ))}
               </div>
               <p className="hint">Roles come from Entra's validated access-token `roles` claim.</p>
@@ -159,7 +155,9 @@ export function App() {
               <p className="eyebrow">UI functionality</p>
               <div className="chips">
                 {[...functionalities].sort().map((functionality) => (
-                  <span className="chip accent" key={functionality}>{functionality}</span>
+                  <span className="chip accent" key={functionality}>
+                    {functionality}
+                  </span>
                 ))}
               </div>
               <p className="hint">These values hide UI controls; they never replace API checks.</p>
@@ -199,7 +197,11 @@ export function App() {
             {!loading && functionalities.size === 0 && (
               <p className="empty">The user has no application role assigned.</p>
             )}
-            {error && <p className="error" role="alert">{error}</p>}
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
             {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
           </section>
         </>

@@ -37,7 +37,6 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
-      - name: Build frontend
+      - name: Check formatting and build frontend
         working-directory: frontend
-        run: npm run build
-
+        run: npm run check

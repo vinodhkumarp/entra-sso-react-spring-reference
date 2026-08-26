@@ -92,6 +92,22 @@ This is expected when the user has the API scope but not the method's required a
 CORS and JWT validation solve different problems. A command-line HTTP client is not governed by
 browser CORS and still requires a valid access token.
 
+## Correlation ID is missing or different
+
+- Use the response header as the effective ID; the backend returns it on both success and errors.
+- Confirm the browser preflight allows and the response exposes `X-Correlation-Id`.
+- The backend replaces values containing spaces, control characters, or more than 128 characters.
+- Search the backend JSON logs for `"X-Correlation-Id":"<correlation-id>"`.
+- A request that never reached the backend cannot have a backend log entry; inspect the frontend
+  `api.request.network_failed` event instead.
+
+Never paste an access token into logs or support tickets. The correlation ID is designed to locate
+the request without sharing credentials.
+
+If `traceparent` is empty, no valid W3C version-00 header reached the backend. This is normal until
+browser or gateway tracing instrumentation is configured. The filter deliberately rejects
+malformed and all-zero trace/parent identifiers.
+
 ## Redirect URI mismatch
 
 The redirect passed by React must exactly match a URI registered under the SPA platform. Register
@@ -113,3 +129,14 @@ complete bearer token.
 The API needs outbound HTTPS access to the configured tenant's OpenID Connect metadata and signing
 keys. Check DNS, proxy, firewall, trust store, tenant ID, and system clock. Do not disable signature
 validation or hard-code a copied signing key as a workaround; Microsoft rotates keys.
+
+## `/api/me` is called continuously after login
+
+Do not call `setActiveAccount` for every `ACQUIRE_TOKEN_SUCCESS` event. Loading `/api/me` first
+acquires a token; updating the active account for that event changes React authentication state and
+can retrigger the effect that loads `/api/me`, creating a request loop.
+
+This repository changes the active account only after `LOGIN_SUCCESS` and makes the `/api/me`
+effect depend on the stable `homeAccountId` rather than the `AccountInfo` object reference. React
+Strict Mode can still produce two initial calls during local development, but calls must not
+continue indefinitely.

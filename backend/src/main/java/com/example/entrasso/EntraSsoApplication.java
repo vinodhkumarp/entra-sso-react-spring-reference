@@ -7,9 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class EntraSsoApplication {
 
-    /** Launches the API and its embedded web server. */
-    public static void main(String[] args) {
-        SpringApplication.run(EntraSsoApplication.class, args);
-    }
+  /** Launches the API and its embedded web server. */
+  public static void main(String[] args) {
+    SpringApplication.run(EntraSsoApplication.class, args);
+  }
 }
-

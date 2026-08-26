@@ -9,6 +9,7 @@ frontend/node_modules/
 .env.*
 !.env.example
 !frontend/.env.example
+frontend/.env.local
 
 # IDE and operating system files
 .idea/

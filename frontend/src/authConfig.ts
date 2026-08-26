@@ -10,6 +10,7 @@ import type {
   EventMessage,
   RedirectRequest,
 } from "@azure/msal-browser";
+import { logger } from "./logger";
 
 /** Reads a required Vite setting and fails before authentication starts when it is missing. */
 function requiredEnvironmentValue(name: keyof ImportMetaEnv): string {
@@ -48,8 +49,13 @@ export const msalConfig: Configuration = {
       logLevel: import.meta.env.DEV ? LogLevel.Warning : LogLevel.Error,
       piiLoggingEnabled: false,
       loggerCallback: (level, message, containsPii) => {
-        if (!containsPii && level <= LogLevel.Warning) {
-          console.warn(`[MSAL] ${message}`);
+        if (containsPii) {
+          return;
+        }
+        if (level === LogLevel.Error) {
+          logger.error("auth.msal", { message });
+        } else if (level === LogLevel.Warning) {
+          logger.warn("auth.msal", { message });
         }
       },
     },
@@ -70,12 +76,10 @@ export function registerAccountSelection(): void {
     if (event.eventType === EventType.LOGIN_SUCCESS) {
       const result = event.payload as AuthenticationResult | null;
       const activeAccount = msalInstance.getActiveAccount();
-      if (
-        result?.account &&
-        result.account.homeAccountId !== activeAccount?.homeAccountId
-      ) {
+      if (result?.account && result.account.homeAccountId !== activeAccount?.homeAccountId) {
         msalInstance.setActiveAccount(result.account);
       }
+      logger.info("auth.login.completed");
     }
   });
 }

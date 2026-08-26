@@ -4,10 +4,11 @@
 
 | Component | Responsibility |
 |---|---|
-| React + MSAL | Start login, obtain an API access token, attach it to API requests, render UI hints |
+| React + MSAL | Start login, obtain an API access token, attach token/correlation headers, render UI hints |
 | Microsoft Entra ID | Authenticate the user, apply tenant policies, issue signed tokens with scopes and roles |
 | Spring Security | Validate the token and enforce the required delegated scope |
 | Backend controllers | Enforce endpoint-specific app roles and return application data |
+| Correlation filter | Validate or create the request ID, populate MDC, log completion, and echo the ID |
 
 React is not an authorization boundary. Users can alter browser state, so every sensitive backend
 method must enforce its own role requirement.
@@ -27,11 +28,13 @@ sequenceDiagram
     Entra-->>UI: Authorization code
     UI->>Entra: Code + PKCE verifier
     Entra-->>UI: Access token for API audience
-    UI->>API: GET /api/me + Bearer token
+    UI->>UI: Create correlation ID
+    UI->>API: GET /api/me + Bearer token + X-Correlation-Id
+    API->>API: Validate/generate ID and populate MDC
     API->>API: Validate signature, iss, aud, exp, nbf
     API->>API: Require access_as_user and map roles
-    API-->>UI: Roles + functionality
-    UI->>API: GET protected endpoint + Bearer token
+    API-->>UI: Roles + functionality + X-Correlation-Id
+    UI->>API: GET protected endpoint + token + new correlation ID
     API->>API: Repeat validation + @PreAuthorize
     API-->>UI: 200, 401, or 403
 ```
@@ -82,8 +85,27 @@ hide irrelevant controls, but each controller still uses `@PreAuthorize`.
 ## CORS
 
 CORS executes before bearer authentication so an unauthenticated browser preflight can succeed.
-Only the configured React origin, expected methods, and `Authorization`/`Content-Type` headers are
-allowed. CORS does not authenticate calls and does not affect non-browser clients.
+Only the configured React origin, expected methods, and
+`Authorization`/`Content-Type`/`X-Correlation-Id`/`traceparent` headers are allowed. The backend
+exposes `X-Correlation-Id` so browser code can read the effective response value. CORS does not
+authenticate calls and does not affect non-browser clients.
+
+## Logging and correlation boundary
+
+`frontend/src/logger.ts` is the only direct browser-console logging boundary. `api.ts` creates one
+UUID per request and records start/completion/failure events with that ID. The access token is
+never supplied to the logger.
+
+The backend `CorrelationIdFilter` executes before Spring Security. A caller value is accepted only
+when it contains 1–128 letters, digits, dots, underscores, colons, or hyphens and starts with an
+alphanumeric character. This prevents control-character log injection. Missing or invalid values
+are replaced with a UUID. The filter puts the ID in SLF4J MDC inside a scoped block, ensuring it is
+removed when processing finishes and cannot leak into another request handled by the same thread.
+The same scope contains a valid incoming W3C `traceparent`, when present. `logback-spring.xml` uses
+Spring Boot's structured encoder and `ApplicationJsonLogFormatter` to produce exactly the six
+documented JSON properties on every log line.
+
+See [observability.md](observability.md) for examples and deployment guidance.
 
 ## When to split the backend later
 
@@ -91,4 +113,3 @@ The single backend is the simplest design while the endpoints share ownership, d
 security boundary. If they later become independently governed services, give each resource API
 its own Entra registration, audience, scope, deployment, and JWT validation. React would then
 acquire the correct audience-specific token for each API.
-

@@ -2,10 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { MsalProvider } from "@azure/msal-react";
 import { App } from "./App";
-import {
-  msalInstance,
-  registerAccountSelection,
-} from "./authConfig";
+import { msalInstance, registerAccountSelection } from "./authConfig";
+import { errorType, logger } from "./logger";
 import "./styles.css";
 
 /** Initializes MSAL redirect handling before React components request authentication state. */
@@ -32,6 +30,9 @@ async function start(): Promise<void> {
       </MsalProvider>
     </StrictMode>,
   );
+  logger.info("application.started");
 }
 
-void start();
+void start().catch((error: unknown) => {
+  logger.error("application.start.failed", { errorType: errorType(error) });
+});
