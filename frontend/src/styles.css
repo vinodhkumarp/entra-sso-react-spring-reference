@@ -84,6 +84,11 @@ button.secondary {
   cursor: pointer;
   font-weight: 750;
 }
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
 
 button.primary {
   color: white;

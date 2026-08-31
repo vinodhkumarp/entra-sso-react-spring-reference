@@ -1,0 +1,11 @@
+com/example/localissuer/LocalIssuerProperties.class
+com/example/localissuer/MockJwtIssuerApplication.class
+com/example/localissuer/LocalJwtService.class
+com/example/localissuer/TestIdentityCatalog$TestIdentity.class
+com/example/localissuer/LocalIssuerConfiguration.class
+com/example/localissuer/LocalJwtService$IssuedToken.class
+com/example/localissuer/LocalIssuerController.class
+com/example/localissuer/LocalIssuerController$TokenResponse.class
+com/example/localissuer/TestIdentityCatalog.class
+com/example/localissuer/LocalIssuerController$TokenRequest.class
+com/example/localissuer/LocalIssuerConfiguration$1.class

@@ -18,6 +18,7 @@ Spring Boot backend application.
 - End-to-end `X-Correlation-Id` propagation and correlation-aware request logging
 - Spotless/google-java-format for Java and Prettier for the React application
 - Automated tests for `401`, `403`, roles, CORS, `/api/me`, and successful requests
+- Separate local JWT testing applications for development before Entra is available
 
 ## Simplified architecture
 
@@ -87,6 +88,29 @@ to Java 25 in the terminal that runs Maven.
 A personal Microsoft account alone is not a workforce tenant. Create or use a tenant and invite
 the personal account as a guest if needed.
 
+## Develop before Entra is configured
+
+The repository includes a standalone local JWT issuer and a separate token test UI. The issuer
+creates short-lived RS256 tokens for fixed test identities, while the production Spring Boot API
+validates them through its normal OAuth 2.0 resource-server security chain.
+
+```mermaid
+flowchart LR
+    Developer["Developer selects a fixed test identity"] --> TestUI["Standalone token test UI :5174"]
+    TestUI -->|"Request token"| Issuer["Standalone mock JWT issuer :9090"]
+    Issuer -->|"Short-lived RS256 token"| TestUI
+    TestUI -->|"Bearer token"| Security["Production Spring Security chain :8080"]
+    Security -->|"Discover public signing key"| Issuer
+    Security --> Endpoints["Same /api endpoints"]
+```
+
+This flow never contacts Microsoft and is not SSO. The signing key exists only in the local
+issuer's memory, the issuer accepts only fixed identities, and both testing applications bind to
+local development origins. They must never be deployed.
+
+Follow [docs/local-jwt-testing.md](docs/local-jwt-testing.md) for the complete setup, expected
+results, negative tests, and the transition back to Entra.
+
 ## 1. Configure Microsoft Entra ID
 
 Follow [docs/entra-setup.md](docs/entra-setup.md) for the click-by-click beginner guide. You will
@@ -141,6 +165,9 @@ spring:
 
 Spring uses the tenant metadata and signing keys to validate the signature, issuer, audience,
 expiry, and not-before time.
+
+The Entra decoder is stored in `application-entra.yml`. The `entra` profile is the default, so the
+normal commands above remain unchanged.
 
 ## 3. Configure and start React
 
@@ -277,6 +304,9 @@ configures `oauth2ResourceServer().jwt(...)`. On each protected request:
 6. Valid token with insufficient permission (`403`)
 7. Logout
 8. Adding another protected endpoint
+
+[docs/local-jwt-testing.md](docs/local-jwt-testing.md) separately covers development when the Entra
+tenant and app registrations do not yet exist.
 
 ## Build verification
 

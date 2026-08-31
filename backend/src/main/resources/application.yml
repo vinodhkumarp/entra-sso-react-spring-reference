@@ -7,17 +7,12 @@ server:
 spring:
   application:
     name: entra-sso-backend
+  profiles:
+    default: entra
   main:
     banner-mode: off
   lifecycle:
     timeout-per-shutdown-phase: 30s
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
-          audiences: ${ENTRA_API_CLIENT_ID}
-
 app:
   security:
     required-scope: access_as_user

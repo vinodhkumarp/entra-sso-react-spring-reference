@@ -1,0 +1,20 @@
+server:
+  address: 127.0.0.1
+  port: ${LOCAL_ISSUER_PORT:9090}
+  shutdown: graceful
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: local-mock-jwt-issuer
+  main:
+    banner-mode: off
+
+local:
+  issuer:
+    issuer: ${LOCAL_ISSUER_URI:http://localhost:9090}
+    audience: ${LOCAL_TOKEN_AUDIENCE:local-spring-api}
+    token-ttl: 5m
+    allowed-origins:
+      - "${LOCAL_TEST_UI_ORIGIN:http://localhost:5174}"

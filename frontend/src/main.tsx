@@ -6,8 +6,14 @@ import { msalInstance, registerAccountSelection } from "./authConfig";
 import { errorType, logger } from "./logger";
 import "./styles.css";
 
-/** Initializes MSAL redirect handling before React components request authentication state. */
+/** Initializes MSAL and renders the production Microsoft Entra application. */
 async function start(): Promise<void> {
+  const rootElement = document.getElementById("root");
+  if (!rootElement) {
+    throw new Error("The root HTML element was not found");
+  }
+  const root = createRoot(rootElement);
+
   await msalInstance.initialize();
   registerAccountSelection();
 
@@ -18,12 +24,7 @@ async function start(): Promise<void> {
     msalInstance.setActiveAccount(msalInstance.getAllAccounts()[0] ?? null);
   }
 
-  const rootElement = document.getElementById("root");
-  if (!rootElement) {
-    throw new Error("The root HTML element was not found");
-  }
-
-  createRoot(rootElement).render(
+  root.render(
     <StrictMode>
       <MsalProvider instance={msalInstance}>
         <App />
