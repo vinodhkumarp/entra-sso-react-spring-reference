@@ -29,7 +29,7 @@
         <java.version>25</java.version>
         <google-java-format.version>1.36.0</google-java-format.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spotless-maven-plugin.version>3.9.0</spotless-maven-plugin.version>
+        <spotless-maven-plugin.version>3.10.1</spotless-maven-plugin.version>
     </properties>
 
     <dependencies>
