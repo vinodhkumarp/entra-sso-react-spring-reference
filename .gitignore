@@ -1,7 +1,7 @@
 # Build output
-backend/target/
-frontend/dist/
-frontend/node_modules/
+**/target/
+**/dist/
+**/node_modules/
 *.tsbuildinfo
 
 # Local environment and secrets
@@ -20,5 +20,4 @@ frontend/.env.local
 # Logs and test output
 *.log
 coverage/
-
-node_modules/
+**/sbom.cdx.json

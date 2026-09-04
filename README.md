@@ -18,6 +18,8 @@ Spring Boot backend application.
 - Exact-origin CORS, stateless APIs, and no custom authentication endpoint
 - End-to-end `X-Correlation-Id` propagation and correlation-aware request logging
 - Spotless/google-java-format for Java and Prettier for the React application
+- JaCoCo 85% line-coverage gates, Checkstyle, SpotBugs, and Maven Enforcer
+- Local OWASP Dependency-Check/npm audit commands and CycloneDX SBOM generation
 - Automated tests for `401`, `403`, roles, CORS, `/api/me`, and successful requests
 - Separate local JWT testing applications for development before Entra is available
 
@@ -92,6 +94,7 @@ authentication sources.
 
 ### Common prerequisites
 
+- GNU Make for the recommended single-command workflow
 - Java 25
 - Maven 3.9+ or the included Maven Wrapper
 - Node.js 22.12+ and npm
@@ -109,6 +112,38 @@ npm --version
 `java -version` must report Java 25. If multiple JDKs are installed, set `JAVA_HOME` to the Java 25
 installation in every terminal that runs Maven. The Maven Wrapper downloads the repository's
 configured Maven version on its first run, so a separate Maven installation is optional.
+
+### Recommended Make workflow
+
+From a new checkout, run:
+
+```bash
+make setup
+make help
+```
+
+`make setup` creates an ignored root `.env` from `.env.example` without overwriting an existing
+file, validates the toolchain, and installs both npm applications from their lockfiles. The
+Makefile derives all application URLs and environment variables from this root file.
+
+Start the complete local JWT flow, with automatic readiness ordering:
+
+```bash
+make local
+```
+
+For real Entra testing, fill `ENTRA_TENANT_ID`, `ENTRA_API_CLIENT_ID`, and `ENTRA_SPA_CLIENT_ID` in
+`.env`, then run:
+
+```bash
+make entra
+```
+
+Both commands keep their component group in one terminal and stop on `Ctrl+C`. Individual backend,
+issuer, and UI targets are available through `make help`. On Windows, use WSL or Git Bash with GNU
+Make for the combined run targets. See [docs/developer-workflow.md](docs/developer-workflow.md) for
+the environment reference and complete command catalog. The manual commands below remain useful
+for understanding or troubleshooting each component independently.
 
 ## Starting the application with Microsoft Entra ID
 
@@ -451,27 +486,46 @@ central logger is the one extension point for Application Insights or OpenTeleme
 
 ## Formatting and quality checks
 
-Backend formatting uses Spotless 3.9.0 with google-java-format 1.36.0. `verify` automatically runs
-the formatting check:
+Every Java `verify` runs tests and fails on any of the following: less than 85% aggregate line
+coverage, a Checkstyle violation, a SpotBugs finding, formatting drift, an unsupported Java/Maven
+version, or a snapshot dependency. Generated OpenAPI classes are excluded; handwritten production
+code is not. The JaCoCo HTML report is written to `target/site/jacoco/index.html`.
+
+From the repository root, the preferred complete checks are:
+
+```bash
+make format
+make verify
+make coverage
+```
 
 ```bash
 cd backend
 ./mvnw spotless:apply   # format Java sources
-./mvnw spotless:check   # check without changing files
-./mvnw verify           # tests, package, and formatting check
+./mvnw verify           # tests, coverage, static analysis, package, and formatting
 ```
 
-Frontend formatting uses the exact Prettier version recorded in `package-lock.json`. TypeScript's
-strict compiler remains the code-quality gate. The current TypeScript 7 compiler is newer than the
-supported `typescript-eslint` peer range, so this repository does not force an incompatible ESLint
-installation.
+The React applications use locked Prettier versions and the TypeScript compiler in strict mode.
+TypeScript 7 is newer than the range currently supported by `typescript-eslint`, so the repository
+does not force an incompatible ESLint parser.
 
 ```bash
 cd frontend
 npm run format          # format frontend source/configuration
 npm run format:check    # check without changing files
 npm run check           # formatting check, strict typecheck, and production build
+npm run security:audit  # fail on high or critical dependency vulnerabilities
 ```
+
+Run the opt-in Java dependency scan and CycloneDX SBOM generation with
+`./mvnw -Psecurity verify`. It uses the existing Maven Wrapper and requires no global scanner
+installation. The first vulnerability-database download can be slow; an `NVD_API_KEY` environment
+variable is recommended. See [docs/quality-and-security.md](docs/quality-and-security.md) for all
+macOS/Linux and PowerShell commands, reports, suppression policy, and repository security settings.
+
+The root-level equivalents are `make security`, `make security-java`, `make security-node`, and
+`make sbom`. These are network-backed commands and may share dependency metadata with configured
+services, but they do not upload source files. Review organizational egress policy before use.
 
 ## Where JWT validation happens
 
@@ -503,12 +557,24 @@ tenant and app registrations do not yet exist.
 
 ## Build verification
 
+The single root command is:
+
+```bash
+make verify
+```
+
+Its underlying component commands are:
+
 ```bash
 cd backend && ./mvnw verify
 cd ../frontend && npm ci && npm run check
+cd ../local-testing/mock-jwt-issuer && ../../backend/mvnw verify
+cd ../token-test-ui && npm ci && npm run check
 ```
 
-GitHub Actions runs both checks for pushes and pull requests.
+GitHub Actions runs all four checks plus npm vulnerability audits for pushes and pull requests. A
+separate weekly/manual workflow performs network-backed dependency scans, publishes SARIF to code
+scanning, and retains CycloneDX SBOMs and reports.
 
 ## Troubleshooting
 

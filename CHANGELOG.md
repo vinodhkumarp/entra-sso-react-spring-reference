@@ -20,3 +20,11 @@ and releases should use semantic versioning.
 - OpenAPI 3.0 contract with build-time Spring Boot 4 controller and response-model generation.
 - Delegate implementations that keep role authorization and business behavior outside generated
   code.
+- JaCoCo gates that fail both Java builds below 85% aggregate handwritten line coverage.
+- Project-owned Checkstyle rules, SpotBugs bytecode analysis, and Java/Maven environment
+  enforcement.
+- Opt-in OWASP Dependency-Check scans, npm audit commands, CycloneDX SBOM generation, and scheduled
+  dependency-security automation.
+- CI and Dependabot coverage for the production applications and isolated local-testing utilities.
+- Root Makefile with guided setup, environment validation, ordered Entra/local startup, quality
+  gates, formatting, vulnerability scans, SBOM generation, and cleanup commands.

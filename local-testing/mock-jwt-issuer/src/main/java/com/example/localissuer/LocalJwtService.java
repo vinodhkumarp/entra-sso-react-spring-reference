@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 
 /** Generates an ephemeral RSA key and short-lived Entra-shaped test access tokens. */
 @Service
-public class LocalJwtService {
+public final class LocalJwtService {
 
   private static final String LOCAL_TENANT_ID = "local-test-tenant";
   private static final String REQUIRED_SCOPE = "access_as_user";
