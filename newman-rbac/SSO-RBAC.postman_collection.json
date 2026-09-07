@@ -1,0 +1,273 @@
+{
+  "info": {
+    "_postman_id": "2f165be2-eb34-4d12-91f6-8cfa91884233",
+    "name": "SSO RBAC - Newman",
+    "description": "Generates a fresh token for each role and captures the status of each protected endpoint.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "tokenBaseUrl",
+      "value": "http://localhost:9090"
+    },
+    {
+      "key": "apiBaseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "bearer_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Generate Test Token",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.unset('bearer_token');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const role = pm.iterationData.get('role');",
+              "pm.test(`[${role}] token endpoint returns 200`, function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "let token;",
+              "pm.test(`[${role}] token response contains accessToken`, function () {",
+              "  const responseData = pm.response.json();",
+              "  pm.expect(responseData.accessToken).to.be.a('string').and.not.be.empty;",
+              "  token = responseData.accessToken;",
+              "});",
+              "if (token) {",
+              "  pm.collectionVariables.set('bearer_token', token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{role}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{tokenBaseUrl}}/test-token",
+          "host": [
+            "{{tokenBaseUrl}}"
+          ],
+          "path": [
+            "test-token"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Current User - /api/me",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const role = pm.iterationData.get('role');",
+              "pm.test(`[${role}] /api/me returns 200`, function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test(`[${role}] /api/me returns a JSON object`, function () {",
+              "  const responseData = pm.response.json();",
+              "  pm.expect(responseData).to.be.an('object');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{bearer_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{apiBaseUrl}}/api/me",
+          "host": [
+            "{{apiBaseUrl}}"
+          ],
+          "path": [
+            "api",
+            "me"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Admin Users - Admin Access",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const role = pm.iterationData.get('role');",
+              "const expected = pm.iterationData.get('expectedAdminUsers');",
+              "pm.test(`[${role}] /api/admin/users returns an RBAC status`, function () {",
+              "  pm.expect([200, 403]).to.include(pm.response.code);",
+              "});",
+              "if (expected !== undefined && expected !== null && expected !== '') {",
+              "  pm.test(`[${role}] /api/admin/users returns ${expected}`, function () {",
+              "    pm.response.to.have.status(Number(expected));",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{bearer_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{apiBaseUrl}}/api/admin/users",
+          "host": [
+            "{{apiBaseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "users"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Dashboard - Admin & Manager Access",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const role = pm.iterationData.get('role');",
+              "const expected = pm.iterationData.get('expectedDashboard');",
+              "pm.test(`[${role}] /api/dashboard returns an RBAC status`, function () {",
+              "  pm.expect([200, 403]).to.include(pm.response.code);",
+              "});",
+              "if (expected !== undefined && expected !== null && expected !== '') {",
+              "  pm.test(`[${role}] /api/dashboard returns ${expected}`, function () {",
+              "    pm.response.to.have.status(Number(expected));",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{bearer_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{apiBaseUrl}}/api/dashboard",
+          "host": [
+            "{{apiBaseUrl}}"
+          ],
+          "path": [
+            "api",
+            "dashboard"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Reports - All Access",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const role = pm.iterationData.get('role');",
+              "const expected = pm.iterationData.get('expectedReports');",
+              "pm.test(`[${role}] /api/reports returns an RBAC status`, function () {",
+              "  pm.expect([200, 403]).to.include(pm.response.code);",
+              "});",
+              "if (expected !== undefined && expected !== null && expected !== '') {",
+              "  pm.test(`[${role}] /api/reports returns ${expected}`, function () {",
+              "    pm.response.to.have.status(Number(expected));",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{bearer_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{apiBaseUrl}}/api/reports",
+          "host": [
+            "{{apiBaseUrl}}"
+          ],
+          "path": [
+            "api",
+            "reports"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "sso-rbac-newman-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Newman tests for the local SSO role-based access endpoints",
+  "scripts": {
+    "test": "node run-rbac-tests.js"
+  },
+  "devDependencies": {
+    "newman": "6.2.1"
+  }
+}

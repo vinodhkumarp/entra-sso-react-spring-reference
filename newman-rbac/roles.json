@@ -1,0 +1,20 @@
+[
+  {
+    "role": "manager",
+    "expectedAdminUsers": 403,
+    "expectedDashboard": 200,
+    "expectedReports": 403
+  },
+  {
+    "role": "admin",
+    "expectedAdminUsers": null,
+    "expectedDashboard": null,
+    "expectedReports": null
+  },
+  {
+    "role": "user",
+    "expectedAdminUsers": null,
+    "expectedDashboard": null,
+    "expectedReports": null
+  }
+]
