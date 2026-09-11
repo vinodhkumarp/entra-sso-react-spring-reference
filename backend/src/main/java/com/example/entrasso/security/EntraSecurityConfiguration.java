@@ -37,6 +37,7 @@ public class EntraSecurityConfiguration {
   SecurityFilterChain securityFilterChain(
       HttpSecurity http,
       EntraSecurityProperties properties,
+      ApiSecurityErrorHandler apiSecurityErrorHandler,
       JwtAuthenticationConverter jwtAuthenticationConverter,
       CorsConfigurationSource corsConfigurationSource)
       throws Exception {
@@ -47,6 +48,11 @@ public class EntraSecurityConfiguration {
         .requestCache(AbstractHttpConfigurer::disable)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .exceptionHandling(
+            exceptions ->
+                exceptions
+                    .authenticationEntryPoint(apiSecurityErrorHandler)
+                    .accessDeniedHandler(apiSecurityErrorHandler))
         .authorizeHttpRequests(
             authorize ->
                 authorize
@@ -60,8 +66,10 @@ public class EntraSecurityConfiguration {
                     .denyAll())
         .oauth2ResourceServer(
             resourceServer ->
-                resourceServer.jwt(
-                    jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+                resourceServer
+                    .authenticationEntryPoint(apiSecurityErrorHandler)
+                    .accessDeniedHandler(apiSecurityErrorHandler)
+                    .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
     return http.build();
   }
 

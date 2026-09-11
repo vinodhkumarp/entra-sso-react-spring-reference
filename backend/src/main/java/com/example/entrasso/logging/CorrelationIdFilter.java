@@ -27,6 +27,10 @@ public final class CorrelationIdFilter extends OncePerRequestFilter {
   /** MDC key rendered by the configured Spring Boot logging pattern. */
   public static final String MDC_KEY = "correlationId";
 
+  /** Request attribute used by centralized error handling to populate the response body. */
+  public static final String REQUEST_ATTRIBUTE_NAME =
+      CorrelationIdFilter.class.getName() + ".correlationId";
+
   /** W3C Trace Context header accepted from an instrumented browser or upstream gateway. */
   public static final String TRACEPARENT_HEADER = "traceparent";
 
@@ -57,6 +61,7 @@ public final class CorrelationIdFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
     String correlationId = resolveCorrelationId(request.getHeader(HEADER_NAME));
     String traceparent = resolveTraceparent(request.getHeader(TRACEPARENT_HEADER));
+    request.setAttribute(REQUEST_ATTRIBUTE_NAME, correlationId);
     response.setHeader(HEADER_NAME, correlationId);
     long startedAt = System.nanoTime();
 

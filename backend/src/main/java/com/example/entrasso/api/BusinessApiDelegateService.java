@@ -3,10 +3,11 @@ package com.example.entrasso.api;
 import com.example.entrasso.generated.api.BusinessApiDelegate;
 import com.example.entrasso.generated.model.DashboardResponse;
 import com.example.entrasso.generated.model.ReportsResponse;
+import com.example.entrasso.security.CanViewDashboard;
+import com.example.entrasso.security.CanViewReports;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 /** Supplies business behavior to the generated dashboard and reports controller. */
@@ -15,7 +16,7 @@ public class BusinessApiDelegateService implements BusinessApiDelegate {
 
   /** Returns dashboard data to user, manager, or administrator roles. */
   @Override
-  @PreAuthorize("hasAnyRole('APP_USER', 'APP_MANAGER', 'APP_ADMIN')")
+  @CanViewDashboard
   public DashboardResponse getDashboard() {
     return new DashboardResponse(
         "Dashboard data returned by the Entra SSO backend",
@@ -25,7 +26,7 @@ public class BusinessApiDelegateService implements BusinessApiDelegate {
 
   /** Returns report summaries only to manager and administrator roles. */
   @Override
-  @PreAuthorize("hasAnyRole('APP_MANAGER', 'APP_ADMIN')")
+  @CanViewReports
   public ReportsResponse getReports() {
     return new ReportsResponse(
         "Reports data returned by the Entra SSO backend",

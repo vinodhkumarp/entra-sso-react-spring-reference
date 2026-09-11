@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -27,7 +28,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,7 +38,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(
     properties = {
       "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.test",
-      "spring.security.oauth2.resourceserver.jwt.audiences=test-api"
+      "spring.security.oauth2.resourceserver.jwt.audiences=test-api",
+      "app.security.allowed-origins[0]=http://localhost:5173"
     })
 @AutoConfigureMockMvc
 @Import(ApiSecurityTest.DecoderConfiguration.class)
@@ -64,10 +68,31 @@ class ApiSecurityTest {
   @Test
   void rejectsMissingToken() throws Exception {
     mockMvc
-        .perform(get("/api/dashboard"))
+        .perform(get("/api/dashboard").header("X-Correlation-Id", "missing-token-123"))
         .andExpect(status().isUnauthorized())
-        .andExpect(header().exists("X-Correlation-Id"));
+        .andExpect(header().string("X-Correlation-Id", "missing-token-123"))
+        .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, containsString("Bearer")))
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"))
+        .andExpect(jsonPath("$.detail").value("A valid bearer access token is required."))
+        .andExpect(jsonPath("$.correlationId").value("missing-token-123"))
+        .andExpect(jsonPath("$.instance").value("/api/dashboard"));
     mockMvc.perform(get("/api/admin/users")).andExpect(status().isUnauthorized());
+  }
+
+  /** Verifies token-decoding details are replaced by the same safe authentication response. */
+  @Test
+  void rejectsInvalidTokenWithCustomProblem() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/dashboard")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token")
+                .header("X-Correlation-Id", "invalid-token-123"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"))
+        .andExpect(jsonPath("$.detail").value("A valid bearer access token is required."))
+        .andExpect(
+            jsonPath("$.detail").value(org.hamcrest.Matchers.not(containsString("decoder"))));
   }
 
   /** Verifies the delegated API scope is mandatory even when an app role is present. */
@@ -77,7 +102,12 @@ class ApiSecurityTest {
         .perform(
             get("/api/dashboard")
                 .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_APP_USER"))))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("ACCESS_DENIED"))
+        .andExpect(
+            jsonPath("$.detail")
+                .value("The authenticated user does not have permission for this operation."));
   }
 
   /** Verifies an ordinary application user can load only the dashboard flow. */
@@ -99,7 +129,10 @@ class ApiSecurityTest {
                 new SimpleGrantedAuthority("ROLE_APP_USER"));
 
     mockMvc.perform(get("/api/dashboard").with(userToken)).andExpect(status().isOk());
-    mockMvc.perform(get("/api/reports").with(userToken)).andExpect(status().isForbidden());
+    mockMvc
+        .perform(get("/api/reports").with(userToken))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
     mockMvc.perform(get("/api/admin/users").with(userToken)).andExpect(status().isForbidden());
     mockMvc
         .perform(get("/api/me").with(userToken))
@@ -216,7 +249,7 @@ class ApiSecurityTest {
     @Bean
     JwtDecoder jwtDecoder() {
       return token -> {
-        throw new UnsupportedOperationException("Decoder is not used by SecurityMockMvc JWT tests");
+        throw new BadJwtException("decoder implementation detail must not reach the client");
       };
     }
   }

@@ -2,7 +2,10 @@ server:
   port: ${BACKEND_PORT:8080}
   shutdown: graceful
   error:
+    include-binding-errors: never
+    include-exception: false
     include-message: never
+    include-stacktrace: never
 
 spring:
   application:
@@ -18,6 +21,19 @@ app:
     required-scope: access_as_user
     allowed-origins:
       - "${UI_ORIGIN:http://localhost:5173}"
+    # Backend authorization policy. Values must match Entra app-role values exactly;
+    # Spring's JWT converter adds the ROLE_ prefix internally.
+    endpoint-roles:
+      dashboard:
+        - APP_USER
+        - APP_MANAGER
+        - APP_ADMIN
+      reports:
+        - APP_MANAGER
+        - APP_ADMIN
+      admin-users:
+        - APP_ADMIN
+    # UI-only functionality metadata returned by /api/me.
     role-functionalities:
       APP_USER:
         - DASHBOARD_VIEW

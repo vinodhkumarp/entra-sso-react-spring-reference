@@ -36,9 +36,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserAccessResponse"
         "401":
-          description: Missing, expired, or otherwise invalid bearer token
+          $ref: "#/components/responses/UnauthorizedProblem"
         "403":
-          description: Token does not contain the required delegated scope
+          $ref: "#/components/responses/ForbiddenProblem"
+        default:
+          $ref: "#/components/responses/ApiProblem"
   /api/dashboard:
     get:
       tags:
@@ -54,9 +56,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardResponse"
         "401":
-          description: Missing, expired, or otherwise invalid bearer token
+          $ref: "#/components/responses/UnauthorizedProblem"
         "403":
-          description: Required scope or application role is missing
+          $ref: "#/components/responses/ForbiddenProblem"
+        default:
+          $ref: "#/components/responses/ApiProblem"
   /api/reports:
     get:
       tags:
@@ -72,9 +76,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/ReportsResponse"
         "401":
-          description: Missing, expired, or otherwise invalid bearer token
+          $ref: "#/components/responses/UnauthorizedProblem"
         "403":
-          description: Required scope or application role is missing
+          $ref: "#/components/responses/ForbiddenProblem"
+        default:
+          $ref: "#/components/responses/ApiProblem"
   /api/admin/users:
     get:
       tags:
@@ -92,9 +98,11 @@ paths:
                 items:
                   $ref: "#/components/schemas/AdminUser"
         "401":
-          description: Missing, expired, or otherwise invalid bearer token
+          $ref: "#/components/responses/UnauthorizedProblem"
         "403":
-          description: Required scope or APP_ADMIN role is missing
+          $ref: "#/components/responses/ForbiddenProblem"
+        default:
+          $ref: "#/components/responses/ApiProblem"
 components:
   securitySchemes:
     entraOAuth2:
@@ -106,7 +114,116 @@ components:
           tokenUrl: https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token
           scopes:
             access_as_user: Call the Entra SSO reference API on behalf of the signed-in user
+  responses:
+    UnauthorizedProblem:
+      description: A valid bearer access token is required.
+      headers:
+        X-Correlation-Id:
+          $ref: "#/components/headers/CorrelationId"
+        WWW-Authenticate:
+          description: Standards-compliant OAuth 2.0 bearer authentication challenge.
+          schema:
+            type: string
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ApiProblem"
+    ForbiddenProblem:
+      description: The token lacks the required delegated scope or application role.
+      headers:
+        X-Correlation-Id:
+          $ref: "#/components/headers/CorrelationId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ApiProblem"
+    ApiProblem:
+      description: A custom client, server, database, or downstream error response.
+      headers:
+        X-Correlation-Id:
+          $ref: "#/components/headers/CorrelationId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ApiProblem"
+  headers:
+    CorrelationId:
+      description: Request correlation ID generated or accepted by the backend.
+      schema:
+        type: string
   schemas:
+    ApiProblem:
+      type: object
+      additionalProperties: false
+      description: >-
+        Safe RFC 9457-style error response. Internal exception messages, stack traces, SQL,
+        credentials, access tokens, and downstream response bodies are never included.
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+        - code
+        - correlationId
+        - timestamp
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Stable URI identifying the error category.
+          example: urn:problem:entra-sso-reference:access-denied
+        title:
+          type: string
+          description: Short client-facing error category.
+          example: Access denied
+        status:
+          type: integer
+          format: int32
+          minimum: 400
+          maximum: 599
+          description: HTTP response status.
+          example: 403
+        detail:
+          type: string
+          description: Safe explanation suitable for display or diagnostics.
+          example: The authenticated user does not have permission for this operation.
+        instance:
+          type: string
+          description: Request path associated with this occurrence.
+          example: /api/admin/users
+        code:
+          type: string
+          description: Stable application code intended for client-side decisions.
+          example: ACCESS_DENIED
+        correlationId:
+          type: string
+          description: Value matching the X-Correlation-Id response header and backend logs.
+          example: 9f3bf7b9-e0dc-4f88-87dd-b252c3fcb0a2
+        timestamp:
+          type: string
+          format: date-time
+          description: UTC time when the error response was created.
+        violations:
+          type: array
+          description: Present only when individual request values fail validation.
+          items:
+            $ref: "#/components/schemas/ApiValidationViolation"
+    ApiValidationViolation:
+      type: object
+      additionalProperties: false
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Request field, parameter, or validation path.
+          example: reportId
+        message:
+          type: string
+          description: Client-safe validation message that excludes the rejected value.
+          example: must not be blank
     UserAccessResponse:
       type: object
       additionalProperties: false
